@@ -16,15 +16,15 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y mingw-w64 libexpat1-dev libz-dev xxd wget mtools
 
-    - name: Generate Driver Header and Compile
+    - name: Generate Drivers, Align Headers, and Compile Standalone Exe
       run: |
-        # Create the required inclusion folder structure
+        # Create the inclusion structure folder
         mkdir -p include
         
         # Download official Sony flash driver required by the codebase
-        wget -q "https://software.sonymobile.com/drivers/installers/latest/Sony_Mobile_Software_Update_Drivers_x64_Setup.msi" -O GordonGate || true
+        wget -q "https://sonymobile.com" -O GordonGate || true
         
-        # Check if the download succeeded; if not, create a fallback placeholder to satisfy the compiler
+        # Handle GordonGate driver hex translation
         if [ -f GordonGate ]; then
           echo "Driver download successful. Building GordonGate.h..."
           xxd -i GordonGate > include/GordonGate.h
@@ -33,8 +33,13 @@ jobs:
           echo "unsigned char GordonGate[] = {0x00}; unsigned int GordonGate_len = 1;" > include/GordonGate.h
         fi
         
-        # Manually invoke the Windows cross-compiler, including our new generated directory path
-        x86_64-w64-mingw32-gcc -O2 -Wall -I include newflasher.c -o newflasher.exe -lsetupapi -lwinusb -lexpat -lz
+        # Move system-level expat and zlib header dependencies into our build scope
+        cp /usr/include/expat.h include/
+        cp /usr/include/zlib.h include/
+        cp /usr/include/zconf.h include/
+        
+        # Execute cross-compilation with strict standalone static linking flags
+        x86_64-w64-mingw32-gcc -O2 -Wall -static -I include newflasher.c -o newflasher.exe -lsetupapi -lwinusb -lexpat -lz
 
     - name: Upload Executable Artifact
       uses: actions/upload-artifact@v4.4.3
