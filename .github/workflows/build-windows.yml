@@ -39,8 +39,8 @@ jobs:
         cp /usr/include/zlib.h include/
         cp /usr/include/zconf.h include/
         
-        # Execute cross-compilation with static linking and static XML declarations
-        x86_64-w64-mingw32-gcc -O2 -Wall -DXML_STATIC -static -I include newflasher.c -o newflasher.exe -lsetupapi -lwinusb -lexpat -lz
+        # Cross-compile Newflasher as a clean, independent Windows executable
+        x86_64-w64-mingw32-gcc -O2 -Wall -DXML_STATIC -static -I include newflasher.c -o newflasher.exe -lsetupapi -lwinusb
 
     - name: Upload Executable Artifact
       uses: actions/upload-artifact@v4.4.3
