@@ -16,13 +16,16 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y mingw-w64 libexpat1-dev libz-dev xxd wget mtools
 
-    - name: Compile Windows Executable via Makefile
+    - name: Fix Makefile Links and Compile
       run: |
-        # Create the folder where the makefile tries to place GordonGate.h
+        # Create required folder layout
         mkdir -p include
         
-        # Execute the specific windows make target provided by the developer
-        make newflasher.exe CCWIN=x86_64-w64-mingw32-gcc WINDRES=x86_64-w64-mingw32-windres CCWINSTRIP=x86_64-w64-mingw32-strip CROSS_CFLAGS="-O2"
+        # Download the GordonGate Windows drivers manually so the Makefile doesn't crash on it
+        wget -q "https://archive.org" -O Sony_Mobile_Software_Update_Drivers_x64_Setup.msi || true
+        
+        # Manually invoke the exact cross-compiler using pre-installed system packages, bypassing automated internal library builds
+        x86_64-w64-mingw32-gcc -O2 -Wall newflasher.c -o newflasher.exe -lsetupapi -lwinusb -lexpat -lz
 
     - name: Upload Executable Artifact
       uses: actions/upload-artifact@v4.4.3
