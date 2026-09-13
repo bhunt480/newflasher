@@ -33,13 +33,14 @@ jobs:
           echo "unsigned char GordonGate[] = {0x00}; unsigned int GordonGate_len = 1;" > include/GordonGate.h
         fi
         
-        # Move system-level expat and zlib header dependencies into our build scope
+        # Copy all expat and zlib header dependencies into our build scope
         cp /usr/include/expat.h include/
+        cp /usr/include/expat_external.h include/
         cp /usr/include/zlib.h include/
         cp /usr/include/zconf.h include/
         
-        # Execute cross-compilation with strict standalone static linking flags
-        x86_64-w64-mingw32-gcc -O2 -Wall -static -I include newflasher.c -o newflasher.exe -lsetupapi -lwinusb -lexpat -lz
+        # Execute cross-compilation with static linking and static XML declarations
+        x86_64-w64-mingw32-gcc -O2 -Wall -DXML_STATIC -static -I include newflasher.c -o newflasher.exe -lsetupapi -lwinusb -lexpat -lz
 
     - name: Upload Executable Artifact
       uses: actions/upload-artifact@v4.4.3
