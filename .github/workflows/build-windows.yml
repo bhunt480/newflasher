@@ -1,0 +1,27 @@
+name: Build Newflasher Windows Exe
+
+on:
+  workflow_dispatch: # Allows you to run the build manually
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Install MinGW Cross-Compiler & Libraries
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-mingw-w64-x86_64 libexpat1-dev libz-dev
+
+    - name: Compile Windows Executable
+      run: |
+        x86_64-w64-mingw32-gcc -O2 newflasher.c -o newflasher.exe -lsetupapi -lwinusb -lexpat -lz
+
+    - name: Upload Executable Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: newflasher-v60-windows
+        path: newflasher.exe
