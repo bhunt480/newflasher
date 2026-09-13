@@ -5,42 +5,50 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: msys2 {0}
 
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4.2.2
 
-    - name: Install MinGW Cross-Compiler, Libraries & Utilities
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y mingw-w64 libexpat1-dev libz-dev xxd wget mtools
+    - name: Set up MSYS2 with MinGW Build Tools
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-zlib
+          mingw-w64-x86_64-expat
+          git
+          wget
 
-    - name: Generate Drivers, Align Headers, and Compile Standalone Exe
+    - name: Generate Drivers and Compile Native Exe
       run: |
-        # Create the inclusion structure folder
+        # Create inclusion structure folder
         mkdir -p include
         
         # Download official Sony flash driver required by the codebase
         wget -q "https://sonymobile.com" -O GordonGate || true
         
-        # Handle GordonGate driver hex translation
+        # Build GordonGate driver layout using a standard inline command alternative to xxd
         if [ -f GordonGate ]; then
           echo "Driver download successful. Building GordonGate.h..."
-          xxd -i GordonGate > include/GordonGate.h
+          powershell -Command "Get-Content GordonGate -Encoding Byte | ForEach-Object { '0x{0:x2},' -f \$_ } | Out-File include/GordonGate.h -NoNewline"
+          # Format it cleanly as a C array structure
+          sed -i '1s/^/unsigned char GordonGate[] = {/' include/GordonGate.h
+          echo "0x00}; unsigned int GordonGate_len = $(wc -c < GordonGate);" >> include/GordonGate.h
         else
           echo "Driver download failed. Creating empty mock fallback header..."
           echo "unsigned char GordonGate[] = {0x00}; unsigned int GordonGate_len = 1;" > include/GordonGate.h
         fi
         
-        # Copy all expat and zlib header dependencies into our build scope
-        cp /usr/include/expat.h include/
-        cp /usr/include/expat_external.h include/
-        cp /usr/include/zlib.h include/
-        cp /usr/include/zconf.h include/
-        
-        # Cross-compile Newflasher as a clean, independent Windows executable
-        x86_64-w64-mingw32-gcc -O2 -Wall -DXML_STATIC -static -I include newflasher.c -o newflasher.exe -lsetupapi -lwinusb
+        # Compile directly inside the native Windows target environment
+        gcc -O2 -Wall -Iinclude newflasher.c -o newflasher.exe -lsetupapi -lwinusb -lexpat -lz
 
     - name: Upload Executable Artifact
       uses: actions/upload-artifact@v4.4.3
