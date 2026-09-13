@@ -9,19 +9,19 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4.2.2
 
     - name: Install MinGW Cross-Compiler & Libraries
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-mingw-w64-x86_64 libexpat1-dev libz-dev
+        sudo apt-get install -y mingw-w64 libexpat1-dev libz-dev
 
     - name: Compile Windows Executable
       run: |
         x86_64-w64-mingw32-gcc -O2 newflasher.c -o newflasher.exe -lsetupapi -lwinusb -lexpat -lz
 
     - name: Upload Executable Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4.4.3
       with:
         name: newflasher-v60-windows
         path: newflasher.exe
